@@ -1,37 +1,97 @@
-<cffunction name="CFFileUpload" returntype="struct" access="public" output="false">
-	<cfargument name="deleteBadFile" type="boolean" required="false" default="true">
-	<cfset var loc = {}>
-	<cfset loc.filetypes = {}>
-	<!--- pdf --->
-	<cfset loc.filetypes.pdf = "application/pdf,application/x-pdf,app/pdf">
-	<!--- office --->
-	<cfset loc.filetypes.ppt = "application/vnd.ms-powerpoint">
-	<cfset loc.filetypes.xls = "application/vnd.ms-excel">
-	<cfset loc.filetypes.doc = "application/msword">
-	<cfset loc.filetypes.pub = "application/x-mspublisher,application/vnd.ms-publisher">
-	<cfset loc.filetypes.docm = "application/vnd.ms-word.document.macroEnabled.12">
-	<cfset loc.filetypes.docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-	<cfset loc.filetypes.dotm = "application/vnd.ms-word.template.macroEnabled.12">
-	<cfset loc.filetypes.dotx = "application/vnd.openxmlformats-officedocument.wordprocessingml.template">
-	<cfset loc.filetypes.potm = "application/vnd.ms-powerpoint.template.macroEnabled.12">
-	<cfset loc.filetypes.potx = "application/vnd.openxmlformats-officedocument.presentationml.template">
-	<cfset loc.filetypes.ppam = "application/vnd.ms-powerpoint.addin.macroEnabled.12">
-	<cfset loc.filetypes.ppsm = "application/vnd.ms-powerpoint.slideshow.macroEnabled.12">
-	<cfset loc.filetypes.ppsx = "application/vnd.openxmlformats-officedocument.presentationml.slideshow">
-	<cfset loc.filetypes.pptm = "application/vnd.ms-powerpoint.presentation.macroEnabled.12">
-	<cfset loc.filetypes.pptx = "application/vnd.openxmlformats-officedocument.presentationml.presentation">
-	<cfset loc.filetypes.xlam = "application/vnd.ms-excel.addin.macroEnabled.12">
-	<cfset loc.filetypes.xlsb = "application/vnd.ms-excel.sheet.binary.macroEnabled.12">
-	<cfset loc.filetypes.xlsm = "application/vnd.ms-excel.sheet.macroEnabled.12">
-	<cfset loc.filetypes.xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
-	<cfset loc.filetypes.xltm = "application/vnd.ms-excel.template.macroEnabled.12">
-	<cfset loc.filetypes.xltx = "application/vnd.openxmlformats-officedocument.spreadsheetml.template">
-	<!--- images --->
-	<cfset loc.filetypes.jpg = "image/jpg,image/pjpg,image/jpeg,image/pjpeg">
-	<cfset loc.filetypes.jpeg = "image/jpg,image/pjpg,image/jpeg,image/pjpeg">
-	<cfset loc.filetypes.gif = "image/gif">
-	<cfset loc.filetypes.png = "image/png">
+<!---
+http://gist.github.com/138542
 
+Replacement for <cffile action="upload"> to prevent the MIME/FILE Upload
+Security Issue as documented at:
+
+http://www.coldfusionjedi.com/index.cfm/2009/6/30/Are-you-aware-of-the-MIMEFile-Upload-Security-Issue
+
+This is basically a drop in UDF to replace your <cffile> tag. What it will do is
+intercept the destination directory passed to it and upload the file to CF temp
+directory using getTempDirectory(). It then performs some checks to make sure that
+the file uploaded is of the correct MIME type through the file extension and a list
+of known MIME types for that extension. If everything checks out, it will MOVE the
+file to the desired destination. If not then it will throw an error that you can
+catch. You also have the option of deleteing the invalid file from the temp direcotry
+(which is the default) or keeping it so you can inspect it later (which might be good).
+
+I've included some of the most popular MIME types that people upload like office documents,
+images, and pdfs as default checks. You can add to this list or overwrite it by passing
+your own value with the mimeTypes argument.
+
+Lastly, I've included a list of invalid file extensions that you can append to by passing
+in your own list with the badExtensions arguments. Note that the you can override the
+internal list, only append it.
+
+Instead of:
+
+<cffile
+	action="UPLOAD"
+	filefield="form.thefile"
+	destination="#expandpath('.')#"
+	nameconflict="MAKEUNIQUE">
+<cfset form.thefile = cffile.serverfile>
+
+You replace with: 
+
+
+<!--- In this example I cached all my UDF into a struct called functions within the application scope --->
+<cfset myfile = application.functions.cffileupload(
+		action="UPLOAD"
+        ,filefield="form.thefile"
+        ,destination="#expandpath('.')#"
+        ,nameconflict="MAKEUNIQUE"
+	)>
+
+<cfset form.photo = myfile.serverfile>
+ --->
+<cffunction name="CFFileUpload" returntype="struct" access="public" output="false">
+	<cfargument name="deleteBadFile" type="boolean" required="false" default="true" hint="should we delete an invalid files that are uploaded from the temp directory.">
+	<cfargument name="badExtensions" type="string" required="false" default="" hint="appends the internal extension list. any file with these extensions is automatically invalid.">
+	<cfargument name="mimeTypes" type="struct" required="false" hint="appends or replace the internal list of mimetypes with your own custom list.">
+	<cfset var loc = {}>
+	<cfset loc.badExtensions = "cfm,cfml,asp,aspx,exe,php,cgi,shtml,dbm">
+	<cfset loc.mimetypes = {}>
+	<!--- pdf --->
+	<cfset loc.mimetypes.pdf = "application/pdf,application/x-pdf,app/pdf">
+	<!--- office --->
+	<cfset loc.mimetypes.ppt = "application/vnd.ms-powerpoint">
+	<cfset loc.mimetypes.xls = "application/vnd.ms-excel">
+	<cfset loc.mimetypes.doc = "application/msword">
+	<cfset loc.mimetypes.pub = "application/x-mspublisher,application/vnd.ms-publisher">
+	<cfset loc.mimetypes.docm = "application/vnd.ms-word.document.macroEnabled.12">
+	<cfset loc.mimetypes.docx = "application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+	<cfset loc.mimetypes.dotm = "application/vnd.ms-word.template.macroEnabled.12">
+	<cfset loc.mimetypes.dotx = "application/vnd.openxmlformats-officedocument.wordprocessingml.template">
+	<cfset loc.mimetypes.potm = "application/vnd.ms-powerpoint.template.macroEnabled.12">
+	<cfset loc.mimetypes.potx = "application/vnd.openxmlformats-officedocument.presentationml.template">
+	<cfset loc.mimetypes.ppam = "application/vnd.ms-powerpoint.addin.macroEnabled.12">
+	<cfset loc.mimetypes.ppsm = "application/vnd.ms-powerpoint.slideshow.macroEnabled.12">
+	<cfset loc.mimetypes.ppsx = "application/vnd.openxmlformats-officedocument.presentationml.slideshow">
+	<cfset loc.mimetypes.pptm = "application/vnd.ms-powerpoint.presentation.macroEnabled.12">
+	<cfset loc.mimetypes.pptx = "application/vnd.openxmlformats-officedocument.presentationml.presentation">
+	<cfset loc.mimetypes.xlam = "application/vnd.ms-excel.addin.macroEnabled.12">
+	<cfset loc.mimetypes.xlsb = "application/vnd.ms-excel.sheet.binary.macroEnabled.12">
+	<cfset loc.mimetypes.xlsm = "application/vnd.ms-excel.sheet.macroEnabled.12">
+	<cfset loc.mimetypes.xlsx = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+	<cfset loc.mimetypes.xltm = "application/vnd.ms-excel.template.macroEnabled.12">
+	<cfset loc.mimetypes.xltx = "application/vnd.openxmlformats-officedocument.spreadsheetml.template">
+	<!--- images --->
+	<cfset loc.mimetypes.jpg = "image/jpg,image/pjpg,image/jpeg,image/pjpeg">
+	<cfset loc.mimetypes.jpeg = "image/jpg,image/pjpg,image/jpeg,image/pjpeg">
+	<cfset loc.mimetypes.gif = "image/gif">
+	<cfset loc.mimetypes.png = "image/png">
+	
+	<!--- append our mime types with any custom ones --->
+	<cfif structkeyexists(arguments, "mimeTypes")>
+		<cfset structappend(loc.mimetypes, arguments.mimeTypes, true)>
+		<cfset structdelete(arguments, "mimeTypes")>
+	</cfif>
+	
+	<!--- append our badExtensions with any custom ones --->
+	<cfset loc.badExtensions = listappend(loc.badExtensions, arguments.badExtensions)>
+	<cfset structdelete(arguments, "badExtensions")>
+	
 	<!--- the result to use internally --->
 	<cfset arguments.result = "loc.cffile">
 
@@ -51,12 +111,14 @@
 	<!--- make sure the file uploaded was the proper mimetype from the extension --->
 	<cfset loc.filemimetype = getPageContext().getServletContext().getMimeType(loc.fileuploaded)>
 	<cfif
-		not structkeyexists(loc.filetypes, loc.cffile["serverFileExt"])
-		or not listfindnocase(loc.filetypes[loc.cffile["serverFileExt"]], loc.filemimetype)>
+		listfindnocase(loc.badExtensions, loc.cffile["serverFileExt"])
+ 		or not structkeyexists(loc, "filemimetype")
+		or not structkeyexists(loc.mimetypes, loc.cffile["serverFileExt"])
+		or not listfindnocase(loc.mimetypes[loc.cffile["serverFileExt"]], loc.filemimetype)>
 		<cfif arguments.deleteBadFile>
 			<cffile action="delete" file="#loc.fileuploaded#">
 		</cfif>
-		<cfthrow type="Custom" message="Invalid file type" detail="#loc.filemimetype#">
+		<cfthrow type="Custom" message="Invalid file type">
 	</cfif>
 
 	<!--- everthing is cool, so move the file --->
