@@ -42,15 +42,14 @@ You replace with:
         ,destination="#expandpath('.')#"
         ,nameconflict="MAKEUNIQUE"
 	)>
-
-<cfset form.photo = myfile.serverfile>
+<cfset form.thefile = myfile.serverfile>
  --->
 <cffunction name="CFFileUpload" returntype="struct" access="public" output="false">
 	<cfargument name="deleteBadFile" type="boolean" required="false" default="true" hint="should we delete an invalid files that are uploaded from the temp directory.">
 	<cfargument name="badExtensions" type="string" required="false" default="" hint="appends the internal extension list. any file with these extensions is automatically invalid.">
 	<cfargument name="mimeTypes" type="struct" required="false" default="#structnew()#" hint="appends or replace the internal list of mimetypes with your own custom list.">
 	<cfset var loc = {}>
-	<cfset loc.badExtensions = "cfm,cfml,asp,aspx,exe,php,cgi,shtml,dbm">
+	<cfset loc.badExtensions = "cfm,cfml,cfc,dbm,jsp,asp,aspx,exe,php,cgi,shtml">
 	<cfset loc.mimetypes = {}>
 	<!--- pdf --->
 	<cfset loc.mimetypes.pdf = "application/pdf,application/x-pdf,app/pdf">
