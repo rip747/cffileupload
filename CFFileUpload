@@ -96,7 +96,7 @@ You replace with:
 
 	<!---
 		intercept the upload destination and set it to the tempdirectory,
-		save it though so we can move the file later
+		save it so we can move the file later
 	 --->
 	<cfset loc.destination = arguments.destination>
 	<cfset arguments.destination = getTempDirectory()>
@@ -111,7 +111,7 @@ You replace with:
 	<cfset loc.filemimetype = getPageContext().getServletContext().getMimeType(loc.fileuploaded)>
 	<cfif
 		listfindnocase(loc.badExtensions, loc.cffile["serverFileExt"])
- 		or not structkeyexists(loc, "filemimetype")
+		or not structkeyexists(loc, "filemimetype")
 		or not structkeyexists(loc.mimetypes, loc.cffile["serverFileExt"])
 		or not listfindnocase(loc.mimetypes[loc.cffile["serverFileExt"]], loc.filemimetype)>
 		<cfif arguments.deleteBadFile>
