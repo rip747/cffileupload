@@ -20,7 +20,7 @@ images, and pdfs as default checks. You can add to this list or overwrite it by 
 your own value with the mimeTypes argument.
 
 Lastly, I've included a list of invalid file extensions that you can append to by passing
-in your own list with the badExtensions arguments. Note that the you can override the
+in your own list with the badExtensions arguments. Note that the you can't override the
 internal list, only append it.
 
 Instead of:
