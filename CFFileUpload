@@ -1,5 +1,5 @@
-<cffunction name="CFFileUpload" returntype="string" access="public" output="false">
-	<cfargument name="deleteBadFiles" type="boolean" required="false" default="true">
+<cffunction name="CFFileUpload" returntype="struct" access="public" output="false">
+	<cfargument name="deleteBadFile" type="boolean" required="false" default="true">
 	<cfset var loc = {}>
 	<cfset loc.filetypes = {}>
 	<!--- pdf --->
@@ -34,6 +34,7 @@
 
 	<!--- the result to use internally --->
 	<cfset arguments.result = "loc.cffile">
+
 	<!---
 		intercept the upload destination and set it to the tempdirectory,
 		save it though so we can move the file later
@@ -52,14 +53,26 @@
 	<cfif
 		not structkeyexists(loc.filetypes, loc.cffile["serverFileExt"])
 		or not listfindnocase(loc.filetypes[loc.cffile["serverFileExt"]], loc.filemimetype)>
-		<cfif arguments.deleteBadFiles>
+		<cfif arguments.deleteBadFile>
 			<cffile action="delete" file="#loc.fileuploaded#">
 		</cfif>
 		<cfthrow type="Custom" message="Invalid file type" detail="#loc.filemimetype#">
 	</cfif>
 
+	<!--- everthing is cool, so move the file --->
 	<cfset loc.destination = listappend(loc.destination, loc.cffile["serverFile"], "\/")>
-	<cffile action="MOVE" source="#loc.fileuploaded#" destination="#loc.destination#" nameConflict="OVERWRITE">
+
+	<!--- forgot to handle mode in unix --->
+	<cfset loc.args = {}>
+	<cfset loc.args.action = "move">
+	<cfset loc.args.source = "#loc.fileuploaded#">
+	<cfset loc.args.destination = "#loc.destination#">
+	<cfif structkeyexists(arguments, "mode")>
+		<cfset loc.args.mode = "#arguments.mode#">
+	</cfif>
+
+	<!--- move the file --->
+	<cffile attributeCollection="#loc.args#">
 
 	<cfreturn loc.cffile>
 </cffunction>
