@@ -4,7 +4,6 @@
 	<cfargument name="mimeTypes" type="struct" required="false" default="#structnew()#" hint="appends or replace the internal list of mimetypes with your own custom list.">
 	<cfargument name="allowExtensions" type="string" required="false" default="" hint="extensions that don't have a mimetype associated with them, but should be allowed.">
 	<cfset var loc = {}>
-	<cfset loc.regex = "[^0-9A-Za-z_-]">
 	<cfset loc.badExtensions = "cfm,cfml,cfc,dbm,jsp,asp,aspx,exe,php,cgi,shtml">
 	<cfset loc.mimetypes = {}>
 	<!--- pdf --->
@@ -36,17 +35,17 @@
 	<cfset loc.mimetypes.jpeg = "image/jpg,image/pjpg,image/jpeg,image/pjpeg">
 	<cfset loc.mimetypes.gif = "image/gif">
 	<cfset loc.mimetypes.png = "image/png">
-
+	
 	<!--- append our mime types with any custom ones --->
 	<cfif not structisempty(arguments.mimeTypes)>
 		<cfset structappend(loc.mimetypes, arguments.mimeTypes, true)>
 	</cfif>
 	<cfset structdelete(arguments, "mimeTypes")>
-
+	
 	<!--- append our badExtensions with any custom ones --->
 	<cfset loc.badExtensions = listappend(loc.badExtensions, arguments.badExtensions)>
 	<cfset structdelete(arguments, "badExtensions")>
-
+	
 	<!--- the result to use internally --->
 	<cfset arguments.result = "loc.cffile">
 
@@ -56,7 +55,7 @@
 	 --->
 	<cfset loc.destination = arguments.destination>
 	<cfset arguments.destination = getTempDirectory()>
-	
+
 	<!--- execute upload --->
 	<cffile attributeCollection="#arguments#">
 
@@ -65,9 +64,6 @@
 
 	<!--- try to get the mimetype of the uploaded file --->
 	<cfset loc.filemimetype = getPageContext().getServletContext().getMimeType(loc.fileuploaded)>
-	<cfif !StructKeyExists(loc, "filemimetype")>
-		<cfset loc.filemimetype = "#loc.cffile['CONTENTTYPE']#/#loc.cffile['CONTENTSUBTYPE']#">
-	</cfif>
 
 	<cfif
 		listfindnocase(loc.badExtensions, loc.cffile["serverFileExt"])
@@ -80,23 +76,19 @@
 		</cfif>
 		<cfthrow type="Custom" message="Invalid file type">
 	</cfif>
-
-	<!--- remove invalid only allow valid character in file name --->
-	<cfset loc.cffile["serverFileName"] = ReReplaceNoCase(loc.cffile["serverFileName"], loc.regex, "", "all")>
-	<cfset loc.cffile["serverFile"] = listappend(loc.cffile["serverFileName"], loc.cffile["serverFileExt"], ".")>
-
+	
 	<!--- full path to move the file to --->
 	<cfset loc.finaldestination = listappend(loc.destination, loc.cffile["serverFile"], "\/")>
-
+	
 	<!--- handle makeunique when moving --->
 	<cfif structkeyexists(arguments, "nameconflict") and arguments.nameconflict eq "makeunique">
-
+	
 		<cfif fileexists(loc.finaldestination)>
 			<cfset loc.cffile["serverFileName"] = loc.cffile["serverFileName"] & gettickcount()>
 			<cfset loc.cffile["serverFile"] = listappend(loc.cffile["serverFileName"], loc.cffile["serverFileExt"], ".")>
 			<cfset loc.finaldestination = listappend(loc.destination, loc.cffile["serverFile"], "\/")>
 		</cfif>
-
+	
 	</cfif>
 
 	<!--- forgot to handle mode in unix --->
@@ -116,6 +108,6 @@
 	<cfif structkeyexists(loc, "filemimetype")>
 		<cfset loc.cffile.mimetype = loc.filemimetype>
 	</cfif>
-
+	
 	<cfreturn loc.cffile>
 </cffunction>
