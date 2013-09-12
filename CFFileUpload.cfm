@@ -49,6 +49,9 @@
 
 	<!--- the result to use internally --->
 	<cfset arguments.result = "loc.cffile">
+	
+	<!--- force action argument to upload --->
+	<cfset arguments.action = "upload">
 
 	<!---
 		intercept the upload destination and set it to the tempdirectory,
